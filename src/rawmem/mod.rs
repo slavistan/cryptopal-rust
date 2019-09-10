@@ -40,7 +40,7 @@ impl Rawmem {
 
 
     pub fn from_base64(base64_string: &str) -> Rawmem {
-        panic!();
+        unimplemented!();
     }
 
 
@@ -105,7 +105,20 @@ impl Rawmem {
         }
         result
     }
+
+
+    // xor the data from two Rawmems returning a fresh Rawmem
+    pub fn isolen_xor(&self, other: &Rawmem) -> Rawmem {
+        require!(self.data.len() == other.data.len());
+
+        let mut result = Rawmem { data: Vec::with_capacity(self.data.len()) };
+        for ii in 0..self.data.len() {
+            result.data.push(self.data[ii] ^ other.data[ii]);
+        }
+        result
+    }
 }
+
 
 #[cfg(test)]
 mod tests {
@@ -138,9 +151,31 @@ mod tests {
     #[should_panic]
     fn todo() {
         let mem = Rawmem::from_hex("FF");
-        mem.as_ascii();
         mem.as_base64();
 
         Rawmem::from_base64("FF");
+    }
+
+    #[test]
+    fn challenge1() {
+        let input =
+          "49276d206b696c6c696e6720796f7572\
+           20627261696e206c696b65206120706f\
+           69736f6e6f7573206d757368726f6f6d";
+        let target =
+          "SSdtIGtpbGxpbmcgeW91ciBicmFpbiBs\
+           aWtlIGEgcG9pc29ub3VzIG11c2hyb29t";
+        let output = Rawmem::from_hex(&input).as_base64();
+        assert_eq!(target, output);
+    }
+
+    #[test]
+    fn challenge2() {
+        let input = "1c0111001f010100061a024b53535009181c";
+        let xor_mask = Rawmem::from_hex("686974207468652062756c6c277320657965");
+        let output = Rawmem::from_hex(&input).isolen_xor(&xor_mask);
+
+        let target = Rawmem::from_hex("746865206b696420646f6e277420706c6179");
+        assert_eq!(target, output);
     }
 }
