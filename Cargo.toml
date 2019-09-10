@@ -1,5 +1,5 @@
 [package]
-name = "cryptopal-rust"
+name = "cryptopal"
 version = "0.1.0"
 authors = ["Stanislaw Hüll <Stanislaw.Huell@js-soft.com>"]
 edition = "2018"
@@ -8,3 +8,15 @@ edition = "2018"
 
 [dependencies]
 dbc = "0.3.3"
+
+[lib]
+name = "rawmem"
+path = "src/rawmem/lib.rs"
+
+[[bin]]
+name = "s1c1"
+path = "solutions/set1/s1c1.rs"
+
+[[bin]]
+name ="s1c2"
+path = "solutions/set1/s1c2.rs"
