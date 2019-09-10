@@ -15,9 +15,6 @@ impl PartialEq for Rawmem {
 
 
 impl Rawmem {
-    pub fn new() -> Rawmem {
-        Rawmem { data: Vec::new() }
-    }
 
 
     pub fn from_hex(hex_string: &str) -> Rawmem {
