@@ -39,11 +39,6 @@ impl Rawmem {
     }
 
 
-    pub fn from_ascii(ascii_string: &str) -> Rawmem {
-        panic!();
-    }
-
-
     pub fn from_base64(base64_string: &str) -> Rawmem {
         panic!();
     }
@@ -55,11 +50,6 @@ impl Rawmem {
             result.push_str(&format!("{:02X}", byte));
         }
         result
-    }
-
-
-    pub fn as_ascii(&self) -> String {
-        panic!();
     }
 
 
