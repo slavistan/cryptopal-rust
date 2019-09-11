@@ -110,6 +110,16 @@ impl Rawmem {
         }
         result
     }
+
+
+    // xor the data against a single key one, byte by byte
+    pub fn single_byte_xor(&self, mask: u8) -> Rawmem {
+        let mut result = Rawmem { data: Vec::with_capacity(self.data.len()) };
+        for ii in 0..self.data.len() {
+            result.data.push(self.data[ii] ^ mask);
+        }
+        result
+    }
 }
 
 
