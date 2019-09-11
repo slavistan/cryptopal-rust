@@ -24,6 +24,9 @@ mod tests {
         assert_eq!(Rawmem::from_hex("01").as_base64(), "AQ==");
         assert_eq!(Rawmem::from_hex("FF010F").as_base64(), "/wEP");
         assert_eq!(Rawmem::from_hex("FF010F01").as_base64(), "/wEPAQ==");
+
+        assert_eq!(Rawmem::from_hex("FF").single_byte_xor(0xFFu8), Rawmem::from_hex("00"));
+        assert_eq!(Rawmem::from_hex("0F").single_byte_xor(0xF0u8), Rawmem::from_hex("FF"));
     }
 
 }
