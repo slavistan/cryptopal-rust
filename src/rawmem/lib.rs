@@ -46,6 +46,15 @@ impl Rawmem {
     }
 
 
+    pub fn as_ascii(&self) -> String {
+        let mut result = String::with_capacity(self.data.len());
+        for ii in 0..self.data.len() {
+            result.push(self.data[ii] as char);
+        }
+        result
+    }
+
+
     pub fn as_base64(&self) -> String {
         let max_capacity = 2f64 + (self.data.len() as f64 / 3 as f64).ceil() * 4f64;
         let mut result = String::with_capacity(max_capacity as usize);

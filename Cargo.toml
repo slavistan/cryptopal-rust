@@ -20,3 +20,7 @@ path = "solutions/set1/s1c1.rs"
 [[bin]]
 name ="s1c2"
 path = "solutions/set1/s1c2.rs"
+
+[[bin]]
+name ="s1c3"
+path = "solutions/set1/s1c3.rs"
