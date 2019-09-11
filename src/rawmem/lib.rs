@@ -37,6 +37,13 @@ impl Rawmem {
     }
 
 
+    pub fn from_ascii(ascii_string: &str) -> Rawmem {
+        require!(ascii_string.chars().all(|c| c.is_ascii()));
+
+        Rawmem { data: ascii_string.as_bytes().to_vec() }
+    }
+
+
     pub fn as_hex(&self) -> String {
         let mut result = String::with_capacity(&self.data.len() * 2);
         for &byte in &self.data {
@@ -47,11 +54,12 @@ impl Rawmem {
 
 
     pub fn as_ascii(&self) -> String {
-        let mut result = String::with_capacity(self.data.len());
-        for ii in 0..self.data.len() {
-            result.push(self.data[ii] as char);
-        }
-        result
+        String::from_utf8(self.data.clone()).expect("Invalid UTF8 found")
+        // let mut result = String::with_capacity(self.data.len());
+        // for ii in 0..self.data.len() {
+        //     result.push(self.data[ii] as char);
+        // }
+        // result
     }
 
 
@@ -129,8 +137,51 @@ impl Rawmem {
         }
         result
     }
+
+
+    pub fn repeating_key_xor(&self, key: &Rawmem) -> Rawmem {
+        let mut result = Rawmem { data: Vec::with_capacity(self.data.len()) };
+
+        for ii in 0..self.data.len() {
+            let key_index = ii % key.data.len();
+            result.data.push(self.data[ii] ^ key.data[key_index]);
+        }
+        result
+    }
+
+    pub fn num_of_set_bits(&self) -> u32 {
+        let mut result: u32 = 0;
+        for &byte in self.data.iter() {
+            result += ACTIVE_BITS[byte as usize] as u32;
+        }
+        result
+    }
+
+    // returns bit-wise Hamming distance (number of differing bits)
+    pub fn hamming_distance(&self, other: &Rawmem) -> u32 {
+        self.isolen_xor(&other).num_of_set_bits()
+    }
+
+
+    pub fn hamming_weight(byte: u8) -> u32 {
+        ACTIVE_BITS[byte as usize] as u32
+    }
 }
 
+const ACTIVE_BITS: [u8; 256] = [0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4,
+    1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,1,2,2,
+    3,2,3,3,4,2,3,3,4,3,4,4,5,2,3,3,4,3,4,
+    4,5,3,4,4,5,4,5,5,6,1,2,2,3,2,3,3,4,2,
+    3,3,4,3,4,4,5,2,3,3,4,3,4,4,5,3,4,4,5,
+    4,5,5,6,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,
+    6,3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,1,2,
+    2,3,2,3,3,4,2,3,3,4,3,4,4,5,2,3,3,4,3,
+    4,4,5,3,4,4,5,4,5,5,6,2,3,3,4,3,4,4,5,
+    3,4,4,5,4,5,5,6,3,4,4,5,4,5,5,6,4,5,5,
+    6,5,6,6,7,2,3,3,4,3,4,4,5,3,4,4,5,4,5,
+    5,6,3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,3,
+    4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,4,5,5,6,
+    5,6,6,7,5,6,6,7,6,7,7,8];
 
 #[cfg(test)]
 mod tests {

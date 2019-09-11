@@ -12,7 +12,6 @@ fn main() {
     let mut candidates: Vec<String> = Vec::new();
     for line in reader.lines() {
         let raw_data = Rawmem::from_hex(&line.unwrap());
-
         for key in 0u8..=255u8 {
             let cleartext: String = raw_data.single_byte_xor(key).as_ascii();
             if might_be_english(&cleartext) {

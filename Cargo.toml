@@ -14,6 +14,10 @@ name = "rawmem"
 path = "src/rawmem/lib.rs"
 
 [[bin]]
+name = "sandbox"
+path = "src/sandbox.rs"
+
+[[bin]]
 name = "s1c1"
 path = "solutions/set1/s1c1.rs"
 
@@ -28,3 +32,11 @@ path = "solutions/set1/s1c3.rs"
 [[bin]]
 name ="s1c4"
 path = "solutions/set1/s1c4.rs"
+
+[[bin]]
+name ="s1c5"
+path = "solutions/set1/s1c5.rs"
+
+[[bin]]
+name ="s1c6"
+path = "solutions/set1/s1c6.rs"

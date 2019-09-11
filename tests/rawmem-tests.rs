@@ -27,6 +27,17 @@ mod tests {
 
         assert_eq!(Rawmem::from_hex("FF").single_byte_xor(0xFFu8), Rawmem::from_hex("00"));
         assert_eq!(Rawmem::from_hex("0F").single_byte_xor(0xF0u8), Rawmem::from_hex("FF"));
+
+        assert_eq!(Rawmem::from_ascii("Aa"), Rawmem::from_vec(&[65, 97]));
+        assert_eq!(Rawmem::from_ascii("Aa").as_ascii(), String::from("Aa"));
+
+    }
+
+    #[test]
+    fn hamming() {
+        let data1 = Rawmem::from_ascii("this is a test");
+        let data2 = Rawmem::from_ascii("wokka wokka!!!");
+        assert_eq!(data1.hamming_distance(&data2), 37);
     }
 
 }
