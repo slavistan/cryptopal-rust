@@ -32,6 +32,24 @@ impl Rawmem {
     }
 
 
+    pub fn from_base64(base64_string: &str) -> Rawmem {
+
+        let capacity = (base64_string.len() * 4) / 3;
+        let mut result = Rawmem { data: Vec::with_capacity(capacity) };
+
+        let meat_size = base64_string.len() / 4;
+        for ii in 0..meat_size {
+            let quadruplet = &base64_string[ii..ii+4].as_bytes();
+            println!("QUADRUPLET={:?}", quadruplet);
+            let byte_triplet = Rawmem::byte_triplet_from_base64_quadruplet(&quadruplet);
+            result.data.push(byte_triplet[0]);
+            result.data.push(byte_triplet[1]);
+            result.data.push(byte_triplet[2]);
+        }
+        result
+    }
+
+
     pub fn from_vec(bytes: &[u8]) -> Rawmem {
         Rawmem { data: bytes.to_vec() }
     }
@@ -165,6 +183,45 @@ impl Rawmem {
 
     pub fn hamming_weight(byte: u8) -> u32 {
         ACTIVE_BITS[byte as usize] as u32
+    }
+
+
+    fn base64_char_as_u8(c: char) -> Option<u8> {
+
+        if c.is_ascii_uppercase() {
+            let distance_to_A: u8 = (c as u8) - b'A';
+            Some(distance_to_A)
+        } else if c.is_ascii_lowercase() {
+            let distance_to_a: u8 = (c as u8) - b'a';
+            Some(26u8 + distance_to_a)
+        } else if c.is_ascii_digit() {
+            let distance_to_0: u8 = (c as u8) - b'0';
+            Some(52u8 + distance_to_0)
+        } else if c == '+' {
+            Some(62u8)
+        } else if c == '/' {
+            Some(63u8)
+        } else if c == '=' {
+            None
+        } else {
+            panic!()
+        }
+    }
+
+    fn byte_triplet_from_base64_quadruplet(quadruplet: &[u8]) -> [u8; 3] {
+        require!(quadruplet.len() == 4);
+
+        let q1: u32 = Rawmem::base64_char_as_u8(quadruplet[0] as char).unwrap() as u32;
+        let q2: u32 = Rawmem::base64_char_as_u8(quadruplet[1] as char).unwrap() as u32;
+        let q3: u32 = Rawmem::base64_char_as_u8(quadruplet[2] as char).unwrap() as u32;
+        let q4: u32 = Rawmem::base64_char_as_u8(quadruplet[3] as char).unwrap() as u32;
+
+        let buffer: u32 = ((q1 << 18) | (q2 << 12) | (q3 << 6) | q4) as u32;
+        println!("BUFFER = {:?}", buffer);
+
+        [(buffer >> 16) as u8,
+         ((buffer >> 8) & 0x000000FF) as u8,
+         (buffer & 0x000000FF) as u8]
     }
 }
 

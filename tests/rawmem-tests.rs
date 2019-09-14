@@ -31,6 +31,9 @@ mod tests {
         assert_eq!(Rawmem::from_ascii("Aa"), Rawmem::from_vec(&[65, 97]));
         assert_eq!(Rawmem::from_ascii("Aa").as_ascii(), String::from("Aa"));
 
+        assert_eq!(Rawmem::from_base64("AAAA"), Rawmem::from_hex("000000"));
+        assert_eq!(Rawmem::from_base64("////"), Rawmem::from_hex("FFFFFF"));
+        //TODO Test padding
     }
 
     #[test]
