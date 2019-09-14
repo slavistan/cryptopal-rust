@@ -33,19 +33,23 @@ impl Rawmem {
 
 
     pub fn from_base64(base64_string: &str) -> Rawmem {
+        let len = base64_string.len();
+        require!(len % 4 == 0);
+        let capacity = (len * 4) / 3;
 
-        let capacity = (base64_string.len() * 4) / 3;
         let mut result = Rawmem { data: Vec::with_capacity(capacity) };
 
-        let meat_size = base64_string.len() / 4;
-        for ii in 0..meat_size {
+        for ii in (0..(len-4)).step_by(4) {
             let quadruplet = &base64_string[ii..ii+4].as_bytes();
-            println!("QUADRUPLET={:?}", quadruplet);
-            let byte_triplet = Rawmem::byte_triplet_from_base64_quadruplet(&quadruplet);
+            let byte_triplet = Rawmem::base64_quadruplet_as_byte_triplet(&quadruplet);
             result.data.push(byte_triplet[0]);
             result.data.push(byte_triplet[1]);
             result.data.push(byte_triplet[2]);
         }
+
+        let quadruplet = &base64_string[len-4..len];
+        let mut final_bytes = Rawmem::final_base64_quadruplet_as_bytes(&quadruplet.as_bytes());
+        result.data.append(&mut final_bytes);
         result
     }
 
@@ -71,6 +75,7 @@ impl Rawmem {
     }
 
 
+    // TODO: Replace non-printable chars with something printable
     pub fn as_ascii(&self) -> String {
         String::from_utf8(self.data.clone()).expect("Invalid UTF8 found")
         // let mut result = String::with_capacity(self.data.len());
@@ -208,8 +213,15 @@ impl Rawmem {
         }
     }
 
-    fn byte_triplet_from_base64_quadruplet(quadruplet: &[u8]) -> [u8; 3] {
-        require!(quadruplet.len() == 4);
+    // Parses the non-final part of a base64 string as chunks of 4 6-bit quadruplets
+    // TODO: Base64 quadruplets are characters, not necessarily utf8 encoded. Use char
+    //       type as input.
+    fn base64_quadruplet_as_byte_triplet(quadruplet: &[u8]) -> [u8; 3] {
+    //    require!(quadruplet.len() == 4);
+    //    require!(quadruplet[0] < 64);
+    //    require!(quadruplet[1] < 64);
+    //    require!(quadruplet[2] < 64);
+    //    require!(quadruplet[3] < 64);
 
         let q1: u32 = Rawmem::base64_char_as_u8(quadruplet[0] as char).unwrap() as u32;
         let q2: u32 = Rawmem::base64_char_as_u8(quadruplet[1] as char).unwrap() as u32;
@@ -217,11 +229,43 @@ impl Rawmem {
         let q4: u32 = Rawmem::base64_char_as_u8(quadruplet[3] as char).unwrap() as u32;
 
         let buffer: u32 = ((q1 << 18) | (q2 << 12) | (q3 << 6) | q4) as u32;
-        println!("BUFFER = {:?}", buffer);
 
         [(buffer >> 16) as u8,
          ((buffer >> 8) & 0x000000FF) as u8,
          (buffer & 0x000000FF) as u8]
+    }
+
+    // Parse last base64 quadruplet. Takes care of padding.
+    fn final_base64_quadruplet_as_bytes(quadruplet: &[u8]) -> Vec<u8> {
+    //    require!(quadruplet.len() == 4);
+    //    require!(quadruplet[0] < 64);
+    //    require!(quadruplet[1] < 64);
+    //    require!(quadruplet[2] < 64 || (quadruplet[2] == b'=' && quadruplet[3] == b'='));
+    //    require!(quadruplet[3] < 64 || quadruplet[3] == b'=');
+
+        if quadruplet[3] != b'=' { // 'XXXX': Last group had 3 bytes
+            Rawmem::base64_quadruplet_as_byte_triplet(&quadruplet).to_vec()
+        } else if quadruplet[2] == b'=' { // 'XX==': Last group had 1 byte
+
+            let q1: u32 = Rawmem::base64_char_as_u8(quadruplet[0] as char).unwrap() as u32;
+            let q2: u32 = Rawmem::base64_char_as_u8(quadruplet[1] as char).unwrap() as u32;
+
+            let buffer: u32 = ((q1 << 6) | q2) >> 4;
+            let result: Vec<u8> = vec![(buffer & 0x000000FF) as u8];
+            result
+        } else if quadruplet[3] == b'=' { // 'XXX=': Last group had 2 bytes
+
+            let q1: u32 = Rawmem::base64_char_as_u8(quadruplet[0] as char).unwrap() as u32;
+            let q2: u32 = Rawmem::base64_char_as_u8(quadruplet[1] as char).unwrap() as u32;
+            let q3: u32 = Rawmem::base64_char_as_u8(quadruplet[2] as char).unwrap() as u32;
+            let buffer: u32 = ((q1 << 12) | (q2 << 6) | q3 ) >> 2;
+            let result: Vec<u8> = vec![((buffer >> 8) & 0x000000FF) as u8,
+                (buffer & 0x000000FF) as u8];
+            result
+        } else {
+            panic!();
+        }
+
     }
 }
 

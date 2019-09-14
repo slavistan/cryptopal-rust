@@ -33,7 +33,11 @@ mod tests {
 
         assert_eq!(Rawmem::from_base64("AAAA"), Rawmem::from_hex("000000"));
         assert_eq!(Rawmem::from_base64("////"), Rawmem::from_hex("FFFFFF"));
-        //TODO Test padding
+        assert_eq!(Rawmem::from_base64("////AAAA"), Rawmem::from_hex("FFFFFF000000"));
+        assert_eq!(Rawmem::from_base64("QQ=="), Rawmem::from_ascii("A"));
+        assert_eq!(Rawmem::from_base64("QQ=="), Rawmem::from_ascii("A"));
+        assert_eq!(Rawmem::from_base64("QUI="), Rawmem::from_ascii("AB"));
+        assert_eq!(Rawmem::from_ascii("any carnal pleasure."), Rawmem::from_base64("YW55IGNhcm5hbCBwbGVhc3VyZS4="));
     }
 
     #[test]
