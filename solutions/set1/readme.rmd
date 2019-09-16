@@ -1,6 +1,6 @@
 ---
 title: "Set 1"
-output: "html_document"
+output: "md_document"
 ---
 
 \newcommand{\ubytes}{\mathbf{U_N}}
