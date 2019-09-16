@@ -1,0 +1,5 @@
+[tasks.readme]
+description = "Build the README.md"
+script = [
+  "R -q -e \"rmarkdown::render('solutions/set1/readme.rmd', output_file='README')\""
+]
