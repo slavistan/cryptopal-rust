@@ -42,9 +42,6 @@ mod tests {
 
     #[test]
     fn hamming() {
-        let data1 = Rawmem::from_ascii("this is a test");
-        let data2 = Rawmem::from_ascii("wokka wokka!!!");
-        assert_eq!(data1.hamming_distance(&data2), 37);
     }
 
 }

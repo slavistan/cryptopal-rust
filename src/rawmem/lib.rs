@@ -3,7 +3,7 @@ use dbc::*;
 
 #[derive(Debug)]
 pub struct Rawmem {
-    data: Vec<u8>
+    pub data: Vec<u8>
 }
 
 
@@ -77,12 +77,7 @@ impl Rawmem {
 
     // TODO: Replace non-printable chars with something printable
     pub fn as_ascii(&self) -> String {
-        String::from_utf8(self.data.clone()).expect("Invalid UTF8 found")
-        // let mut result = String::with_capacity(self.data.len());
-        // for ii in 0..self.data.len() {
-        //     result.push(self.data[ii] as char);
-        // }
-        // result
+        hamming::as_ascii(&self.data)
     }
 
 
@@ -90,7 +85,7 @@ impl Rawmem {
         let max_capacity = 2f64 + (self.data.len() as f64 / 3 as f64).ceil() * 4f64;
         let mut result = String::with_capacity(max_capacity as usize);
         let meat_size_in_bytes = (self.data.len() / 3) * 3;
-        const LSB6MASK: u32 = 0x0000003F; // masks the 6 least-significant bits
+        const LSB6MASK: u64 = 0x0000003F; // masks the 6 least-significant bits
         const BASE64_CHARS: [char; 64] =
           ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P',
            'Q','R','S','T','U','V','W','X','Y','Z','a','b','c','d','e','f',
@@ -98,10 +93,10 @@ impl Rawmem {
            'w','x','y','z','0','1','2','3','4','5','6','7','8','9','+','/'];
         // process chunks of 24 bits
         for ii in (0..meat_size_in_bytes).step_by(3) {
-            // read three adjaceny bytes into a u32
-            let chunk: u32 = ((self.data[ii+0] as u32) << 16) |
-                             ((self.data[ii+1] as u32) << 8)  |
-                             ((self.data[ii+2] as u32) << 0);
+            // read three adjaceny bytes into a u64
+            let chunk: u64 = ((self.data[ii+0] as u64) << 16) |
+                             ((self.data[ii+1] as u64) << 8)  |
+                             ((self.data[ii+2] as u64) << 0);
             // shift out sextetts and access base64 char
             for offset in [18, 12, 6, 0].iter() {
                 let base64_char_index: usize = ((chunk >> offset) & LSB6MASK) as usize;
@@ -116,7 +111,7 @@ impl Rawmem {
             1 => {
                 // 1 more byte: 4 pad bits -> 2 more sextetts
                 let num_of_pad_bits = 4;
-                let chunk: u32 = (self.data[next_byte_index] as u32) << num_of_pad_bits;
+                let chunk: u64 = (self.data[next_byte_index] as u64) << num_of_pad_bits;
                 for offset in [6, 0].iter() {
                     let base64_char_index: usize = ((chunk >> offset) & LSB6MASK) as usize;
                     result.push(BASE64_CHARS[base64_char_index]);
@@ -126,8 +121,8 @@ impl Rawmem {
             2 => {
                 // 2 more bytes: 2 pad bits -> 3 more sextetts
                 let num_of_pad_bits = 2;
-                let chunk: u32 = (((self.data[next_byte_index] as u32) << 8)  |
-                                  ((self.data[next_byte_index] as u32) << 0)) << num_of_pad_bits;
+                let chunk: u64 = (((self.data[next_byte_index] as u64) << 8)  |
+                                  ((self.data[next_byte_index] as u64) << 0)) << num_of_pad_bits;
                 for offset in [12, 6, 0].iter() {
                     let base64_char_index: usize = ((chunk >> offset) & LSB6MASK) as usize;
                     result.push(BASE64_CHARS[base64_char_index]);
@@ -142,26 +137,18 @@ impl Rawmem {
 
     // xor the data from two Rawmems returning a fresh Rawmem
     pub fn isolen_xor(&self, other: &Rawmem) -> Rawmem {
-        require!(self.data.len() == other.data.len());
-
-        let mut result = Rawmem { data: Vec::with_capacity(self.data.len()) };
-        for ii in 0..self.data.len() {
-            result.data.push(self.data[ii] ^ other.data[ii]);
-        }
-        result
+        let bytes: Vec<u8> = hamming::isolen_xor(&self.data, &other.data);
+        Rawmem { data: bytes }
     }
 
 
     // xor the data against a single key one, byte by byte
     pub fn single_byte_xor(&self, mask: u8) -> Rawmem {
-        let mut result = Rawmem { data: Vec::with_capacity(self.data.len()) };
-        for ii in 0..self.data.len() {
-            result.data.push(self.data[ii] ^ mask);
-        }
-        result
+        let bytes: Vec<u8> = hamming::single_byte_xor(&self.data, mask);
+        Rawmem { data: bytes }
     }
 
-
+    // TODO: Rename to vigenere_xor
     pub fn repeating_key_xor(&self, key: &Rawmem) -> Rawmem {
         let mut result = Rawmem { data: Vec::with_capacity(self.data.len()) };
 
@@ -172,22 +159,17 @@ impl Rawmem {
         result
     }
 
-    pub fn num_of_set_bits(&self) -> u32 {
-        let mut result: u32 = 0;
-        for &byte in self.data.iter() {
-            result += ACTIVE_BITS[byte as usize] as u32;
-        }
-        result
+    pub fn hamming_weight(&self) -> u64 {
+        hamming::hamming_weight(&self.data)
     }
 
-    // returns bit-wise Hamming distance (number of differing bits)
-    pub fn hamming_distance(&self, other: &Rawmem) -> u32 {
-        self.isolen_xor(&other).num_of_set_bits()
+    pub fn chunked_hamming_density(&self, width: u64) -> (f64, u64) {
+        hamming::chunked_hamming_density(&self.data, width)
     }
 
-
-    pub fn hamming_weight(byte: u8) -> u32 {
-        ACTIVE_BITS[byte as usize] as u32
+    // returns bit-wise hamming distance (number of differing bits)
+    pub fn hamming_distance(&self, other: &Rawmem) -> u64 {
+        hamming::hamming_distance(&self.data, &other.data)
     }
 
 
@@ -223,12 +205,12 @@ impl Rawmem {
     //    require!(quadruplet[2] < 64);
     //    require!(quadruplet[3] < 64);
 
-        let q1: u32 = Rawmem::base64_char_as_u8(quadruplet[0] as char).unwrap() as u32;
-        let q2: u32 = Rawmem::base64_char_as_u8(quadruplet[1] as char).unwrap() as u32;
-        let q3: u32 = Rawmem::base64_char_as_u8(quadruplet[2] as char).unwrap() as u32;
-        let q4: u32 = Rawmem::base64_char_as_u8(quadruplet[3] as char).unwrap() as u32;
+        let q1: u64 = Rawmem::base64_char_as_u8(quadruplet[0] as char).unwrap() as u64;
+        let q2: u64 = Rawmem::base64_char_as_u8(quadruplet[1] as char).unwrap() as u64;
+        let q3: u64 = Rawmem::base64_char_as_u8(quadruplet[2] as char).unwrap() as u64;
+        let q4: u64 = Rawmem::base64_char_as_u8(quadruplet[3] as char).unwrap() as u64;
 
-        let buffer: u32 = ((q1 << 18) | (q2 << 12) | (q3 << 6) | q4) as u32;
+        let buffer: u64 = ((q1 << 18) | (q2 << 12) | (q3 << 6) | q4) as u64;
 
         [(buffer >> 16) as u8,
          ((buffer >> 8) & 0x000000FF) as u8,
@@ -247,18 +229,18 @@ impl Rawmem {
             Rawmem::base64_quadruplet_as_byte_triplet(&quadruplet).to_vec()
         } else if quadruplet[2] == b'=' { // 'XX==': Last group had 1 byte
 
-            let q1: u32 = Rawmem::base64_char_as_u8(quadruplet[0] as char).unwrap() as u32;
-            let q2: u32 = Rawmem::base64_char_as_u8(quadruplet[1] as char).unwrap() as u32;
+            let q1: u64 = Rawmem::base64_char_as_u8(quadruplet[0] as char).unwrap() as u64;
+            let q2: u64 = Rawmem::base64_char_as_u8(quadruplet[1] as char).unwrap() as u64;
 
-            let buffer: u32 = ((q1 << 6) | q2) >> 4;
+            let buffer: u64 = ((q1 << 6) | q2) >> 4;
             let result: Vec<u8> = vec![(buffer & 0x000000FF) as u8];
             result
         } else if quadruplet[3] == b'=' { // 'XXX=': Last group had 2 bytes
 
-            let q1: u32 = Rawmem::base64_char_as_u8(quadruplet[0] as char).unwrap() as u32;
-            let q2: u32 = Rawmem::base64_char_as_u8(quadruplet[1] as char).unwrap() as u32;
-            let q3: u32 = Rawmem::base64_char_as_u8(quadruplet[2] as char).unwrap() as u32;
-            let buffer: u32 = ((q1 << 12) | (q2 << 6) | q3 ) >> 2;
+            let q1: u64 = Rawmem::base64_char_as_u8(quadruplet[0] as char).unwrap() as u64;
+            let q2: u64 = Rawmem::base64_char_as_u8(quadruplet[1] as char).unwrap() as u64;
+            let q3: u64 = Rawmem::base64_char_as_u8(quadruplet[2] as char).unwrap() as u64;
+            let buffer: u64 = ((q1 << 12) | (q2 << 6) | q3 ) >> 2;
             let result: Vec<u8> = vec![((buffer >> 8) & 0x000000FF) as u8,
                 (buffer & 0x000000FF) as u8];
             result
@@ -269,20 +251,147 @@ impl Rawmem {
     }
 }
 
-const ACTIVE_BITS: [u8; 256] = [0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4,
-    1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,1,2,2,
-    3,2,3,3,4,2,3,3,4,3,4,4,5,2,3,3,4,3,4,
-    4,5,3,4,4,5,4,5,5,6,1,2,2,3,2,3,3,4,2,
-    3,3,4,3,4,4,5,2,3,3,4,3,4,4,5,3,4,4,5,
-    4,5,5,6,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,
-    6,3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,1,2,
-    2,3,2,3,3,4,2,3,3,4,3,4,4,5,2,3,3,4,3,
-    4,4,5,3,4,4,5,4,5,5,6,2,3,3,4,3,4,4,5,
-    3,4,4,5,4,5,5,6,3,4,4,5,4,5,5,6,4,5,5,
-    6,5,6,6,7,2,3,3,4,3,4,4,5,3,4,4,5,4,5,
-    5,6,3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,3,
-    4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,4,5,5,6,
-    5,6,6,7,5,6,6,7,6,7,7,8];
+// high-level wrappers
+pub mod cracker {
+
+    use std::u8;
+    use dbc::*;
+    use super::hamming;
+
+    pub fn crack_single_byte_xor_encrypted_ascii_text(bytes: &[u8], num_of_suggestions: i32)
+    -> Vec<(String, u8)> {
+        require!(num_of_suggestions > 0);
+
+        // Decrypt and apply a very basic filter
+        let mut result: Vec<(String, u8)> = Vec::with_capacity(256);
+        for key in 0u8..=255u8 {
+            let decrypted: Vec<u8> = hamming::single_byte_xor(&bytes, key);
+            if decrypted.iter().all(|c| c.is_ascii_graphic() || c.is_ascii_whitespace()) 
+                && decrypted.iter().any(|c| c.is_ascii_whitespace()) {
+                result.push((String::from_utf8(decrypted).expect("Invalid utf8 character"), key));
+            }
+        }
+
+        // sort according to number of special characters
+        fn less_special_chars(a: &String, b: &String) -> std::cmp::Ordering {
+
+            let num_a = num_of_special_chars(&a);
+            let num_b = num_of_special_chars(&b);
+
+            num_a.cmp(&num_b)
+        }
+        fn num_of_special_chars(a: &String) -> u32 {
+            let mut result: u32 = 0;
+            a.chars().for_each(|c| { if c.is_ascii_punctuation() { result += 1 }} );
+            result
+        }
+
+        result.sort_by(|a, b| less_special_chars(&a.0, &b.0));
+        result.truncate(num_of_suggestions as usize);
+        result
+    }
+}
+
+
+// Bare-metal byte manipulations
+pub mod hamming {
+
+    use dbc::*;
+    use std::slice;
+
+    const NUM_OF_ACTIVE_BITS_IN_BYTE: [u8; 256] =
+       [0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4,
+        1,2,2,3,2,3,3,4,2,3,3,4,3,4,4,5,1,2,2,
+        3,2,3,3,4,2,3,3,4,3,4,4,5,2,3,3,4,3,4,
+        4,5,3,4,4,5,4,5,5,6,1,2,2,3,2,3,3,4,2,
+        3,3,4,3,4,4,5,2,3,3,4,3,4,4,5,3,4,4,5,
+        4,5,5,6,2,3,3,4,3,4,4,5,3,4,4,5,4,5,5,
+        6,3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,1,2,
+        2,3,2,3,3,4,2,3,3,4,3,4,4,5,2,3,3,4,3,
+        4,4,5,3,4,4,5,4,5,5,6,2,3,3,4,3,4,4,5,
+        3,4,4,5,4,5,5,6,3,4,4,5,4,5,5,6,4,5,5,
+        6,5,6,6,7,2,3,3,4,3,4,4,5,3,4,4,5,4,5,
+        5,6,3,4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,3,
+        4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,4,5,5,6,
+        5,6,6,7,5,6,6,7,6,7,7,8];
+
+    pub fn hamming_weight(bytes: &[u8]) -> u64 {
+        let mut result: u64 = 0;
+        for &byte in bytes.iter() {
+            result += NUM_OF_ACTIVE_BITS_IN_BYTE[byte as usize] as u64;
+        }
+        result
+    }
+
+    pub fn hamming_distance(a: &[u8], b: &[u8]) -> u64 {
+        require!(a.len() == b.len());
+
+        let mut result: u64 = 0;
+        for ii in 0..a.len() {
+            let byte = a[ii] ^ b[ii];
+            result += hamming_weight(slice::from_ref(&byte));
+        }
+        result
+    }
+
+    pub fn isolen_xor(a: &[u8], b: &[u8]) -> Vec<u8> {
+        require!(a.len() == b.len());
+
+        let mut result: Vec<u8> = Vec::with_capacity(a.len());
+        for ii in 0..a.len() {
+            result.push(a[ii] & b[ii]);
+        }
+        result
+    }
+
+    pub fn single_byte_xor(bytes: &[u8], key: u8) -> Vec<u8> {
+        let mut result: Vec<u8> = bytes.to_vec();
+        single_byte_xor_inplace(&mut result[..], key);
+        result
+    }
+
+    pub fn single_byte_xor_inplace(bytes: &mut [u8], key: u8) {
+        for ii in 0..bytes.len() {
+            bytes[ii] = bytes[ii] ^ key;
+        }
+    }
+
+    // Repeating-key xor
+    pub fn vigenere_xor(bytes: &[u8], key: &[u8]) -> Vec<u8> {
+        require!(key.len() != 0);
+
+        let mut result: Vec<u8> = Vec::with_capacity(bytes.len());
+        for ii in 0..bytes.len() {
+            let key_index = ii % key.len();
+            result.push(bytes[ii] ^ key[key_index]);
+        }
+        result
+    }
+
+    // Returns normalized hamming-distance between neighboring chunks of
+    // given width, tupled with the number of discarded bytes at the end of
+    // input slice.
+    pub fn chunked_hamming_density(bytes: &[u8], width: u64) -> (f64, u64) {
+        let num_of_iterations = (bytes.len() as u64 / width) - 1;
+
+        require!(width > 0);
+        require!(num_of_iterations > 0);
+
+        let mut result: f64 = 0.0;
+        for ii in 0..num_of_iterations {
+            let range_a = (ii*width) as usize..((ii+1)*width) as usize;
+            let range_b = ((ii+1)*width) as usize..((ii+2)*width) as usize;
+            result += hamming_distance(&bytes[range_a], &bytes[range_b]) as f64;
+        }
+        result /= (num_of_iterations * width) as f64;
+        (result, bytes.len() as u64 - ((num_of_iterations+1) as u64 * width))
+    }
+
+    pub fn as_ascii(bytes: &[u8]) -> String {
+        String::from_utf8(bytes.to_vec()).expect("Invalid UTF8 found")
+    }
+
+}
 
 #[cfg(test)]
 mod tests {
