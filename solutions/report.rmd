@@ -1,0 +1,71 @@
+---
+title: "Cryptopals Set 1, Challenge 6"
+output: "html_document"
+---
+
+\newcommand{\ubytes}{\mathbf{U_N}}
+\newcommand{\xor}{\mathbf{\,\oplus\,}}
+\newcommand{\hm}{\mathbf{m}}
+\newcommand{\hdens}{\mathbf{\rho}}
+\newcommand{\hdist}[2]{\mathbf{d}(#1, #2)}
+\newcommand{\hmass}[1]{\mathbf{m}(#1)}
+
+# Defining a measure between bitsets
+
+Let the **mass of a byte** denote its number of set bits.
+
+$$
+\hm(u) := \text{Number of set bits in }u
+$$
+
+Further extend this notion to let the **mass of a byteset** be the total number of set bits over the whole set.
+
+$$
+\hm(U) := \sum \limits_{u \in U} \hm(u)
+$$
+
+Let the **density of a byteset** be the average number of set bits.
+
+$$
+\hdens(U) := \frac{1}{\|U\|} \cdot \hm(U)
+$$
+
+Let the **distance between to bytes** be defined as the number of differing bits, which is equal to the mass of their antivalence
+
+$$
+\|u - v\| := \text{Number of differing bits} = \hm(u \xor v)
+$$
+
+# TODO BELOW HERE
+Let the **average distance between two bytesets** be defined as the average number of bits that differ between any two members of the subsets.
+
+$$
+H(V, W) := \frac{1}{\|V \times W \|} \sum \limits_{v \in V, w \in W} H(v, w) = \frac{1}{\|V\| \cdot \|W\|} \sum \limits_{v \in V, w \in W} H(v \xor w)
+$$
+
+The Hamming-distance of any byteset with respect to itself is less than the Hamming-distance between any two differing bytesets.
+
+We guess a key size and over the set of every pair of two chiffre characters, which were (ostensibly) encrypted by a common key we compute the average distance $\sigma$. Note that if the chiffre is large in comparison to the key a smaller subset of all pairs will suffice as a representative approximation.
+
+[IMAGE]
+
+$$
+\|\sigma\| \cdot \sigma =
+\begin{matrix}
+   \hdist{c_0}{c_n}     &+ &\hdist{c_n}{c_{2n}}       &+ &\hdist{c_0}{c_{2n}}   &+ &\cdots \\
+ &+ &\hdist{c_1}{c_{n+1}} &+ &\hdist{c_{n+1}}{c_{2n+1}} &+ &\hdist{c_0}{c_{2n+1}} &+ &\cdots \\
+ &+ &\vdots               &+ &\vdots                    &+ &\vdots                &+ &\ddots
+\end{matrix}
+$$
+
+If we guessed the correct key size each pair's distance decays into the distance of the corresponding cleartext characters. The xor-operation is commutative, associative and self-inverse and thus the identical keys cancel themselves out.
+
+$$
+\hdist{c_r}{c_s} = \hdist{k \xor l_r}{k \xor l_s} = \hmass{(k \xor l_r) \xor (k \xor l_s)} = \hmass{l_r \xor l_s} = \hdist{l_r}{l_s}
+$$
+
+Thus, assuming that the set of pairs is large enough to be representative, the average distance will approximate the mean distance of the source alphabet $A$ with respect to itself.
+
+$$
+\sigma \approx \frac{1}{\|A\|^2} \cdot \sum \limits_{a_1 \in A, a_2\in A} \hdist{a_1}{a_2}
+$$
