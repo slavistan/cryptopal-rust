@@ -1,8 +1,11 @@
 ---
 title: "Cryptopals Set 1, Challenge 6"
 output: "html_document"
+header-includes:
+   - \usepackage{xcolor}
 ---
 
+\usepackage{xcolor}
 \newcommand{\ubytes}{\mathbf{U_N}}
 \newcommand{\xor}{\mathbf{\,\oplus\,}}
 \newcommand{\hm}{\mathbf{m}}
@@ -33,7 +36,7 @@ $$
 Let the **distance between to bytes** be defined as the number of differing bits, which is equal to the mass of their antivalence
 
 $$
-\|u - v\| := \text{Number of differing bits} = \hm(u \xor v)
+\hdist{u}{v} := \text{Number of differing bits} = \hm(u \xor v)
 $$
 
 # TODO BELOW HERE
@@ -45,15 +48,14 @@ $$
 
 The Hamming-distance of any byteset with respect to itself is less than the Hamming-distance between any two differing bytesets.
 
-We guess a key size and over the set of every pair of two chiffre characters, which were (ostensibly) encrypted by a common key we compute the average distance $\sigma$. Note that if the chiffre is large in comparison to the key a smaller subset of all pairs will suffice as a representative approximation.
+We guess a key size and over the set of every pair of two chiffre characters $(\epsilon_r, \epsilon_s)$, which were (ostensibly) encrypted by a common letter from the key, we compute the average distance $\sigma$. Note that if the chiffre is large in comparison to the key a smaller subset of all pairs will suffice as a representative approximation.
 
-[IMAGE]
+![](assets/s1c6.jpg)
 
 $$
-\|\sigma\| \cdot \sigma =
 \begin{matrix}
-   \hdist{c_0}{c_n}     &+ &\hdist{c_n}{c_{2n}}       &+ &\hdist{c_0}{c_{2n}}   &+ &\cdots \\
- &+ &\hdist{c_1}{c_{n+1}} &+ &\hdist{c_{n+1}}{c_{2n+1}} &+ &\hdist{c_0}{c_{2n+1}} &+ &\cdots \\
+   \|\sigma\| \cdot \sigma = \color{green}{\hdist{\epsilon_0}{\epsilon_n}}     &\color{green}{+}  &\color{green}{\hdist{\epsilon_n}{\epsilon_{2n}}}       &\color{green}{+} &\color{green}{\hdist{\epsilon_0}{\epsilon_{2n}}}   &\color{green}{+} &\color{green}{\cdots} \\
+ &\color{blue}{+} &\color{blue}{\hdist{\epsilon_1}{\epsilon_{n+1}}} &\color{blue}{+} &\color{blue}{\hdist{\epsilon_{n+1}}{\epsilon_{2n+1}}} &\color{blue}{+} &\color{blue}{\hdist{\epsilon_0}{\epsilon_{2n+1}}} &\color{blue}{+} &\color{blue}{\cdots} \\
  &+ &\vdots               &+ &\vdots                    &+ &\vdots                &+ &\ddots
 \end{matrix}
 $$
@@ -61,7 +63,7 @@ $$
 If we guessed the correct key size each pair's distance decays into the distance of the corresponding cleartext characters. The xor-operation is commutative, associative and self-inverse and thus the identical keys cancel themselves out.
 
 $$
-\hdist{c_r}{c_s} = \hdist{k \xor l_r}{k \xor l_s} = \hmass{(k \xor l_r) \xor (k \xor l_s)} = \hmass{l_r \xor l_s} = \hdist{l_r}{l_s}
+\hdist{\epsilon_r}{\epsilon_s} = \hdist{k \xor l_r}{k \xor l_s} = \hmass{(k \xor l_r) \xor (k \xor l_s)} = \hmass{l_r \xor l_s} = \hdist{l_r}{l_s}
 $$
 
 Thus, assuming that the set of pairs is large enough to be representative, the average distance will approximate the mean distance of the source alphabet $A$ with respect to itself.
