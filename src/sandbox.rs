@@ -1,18 +1,35 @@
+
+use rawmem::hamming;
+use std::slice;
+
 fn main() {
-    let a = "Hallo!";
-    let mut b = a.clone();
-
-    unsafe {
-        println!("{:?}", b.get_unchecked(0..100));
+    for ustop in 0u8..=255u8 {
+        for ustart in 0u8..=ustop {
+            for key in 0u8..=255u8 {
+                if hammdist(ustart, ustop, key) < 0 {
+                    println!("asdf");
+                }
+            }
+        }
     }
 }
 
+fn hammdist(ustart: u8, ustop: u8, key: u8) -> i64{
 
-fn foo(s: &str) -> &str {
-
-    if s.len() > 1 {
-        &s[1..2]
-    } else {
-        &s[0..1]
+    let mut uxu = 0u64;
+    for bytea in ustart..=ustop {
+        for byteb in ustart..=ustop {
+            uxu += hamming::hamming_distance(slice::from_ref(&bytea), slice::from_ref(&byteb));
+        }
     }
+
+    let mut uxuxk = 0u64;
+    for bytea in ustart..=ustop {
+        for byteb in ustart..=ustop {
+            uxuxk += hamming::hamming_distance(slice::from_ref(&bytea), slice::from_ref(&(byteb^key)));
+        }
+    }
+
+    (uxuxk as i64) - (uxu as i64)
 }
+

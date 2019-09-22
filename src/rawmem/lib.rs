@@ -315,6 +315,19 @@ pub mod hamming {
         4,4,5,4,5,5,6,4,5,5,6,5,6,6,7,4,5,5,6,
         5,6,6,7,5,6,6,7,6,7,7,8];
 
+    /// Returns the number of set bits in a slice.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rawmem::hamming::hamming_weight;
+    /// use std::slice;
+    ///
+    /// let byte = 3u8;
+    /// let hw = hamming_weight(slice::from_ref(&byte));
+    ///
+    /// assert_eq!(hw, 2);
+    /// ```
     pub fn hamming_weight(bytes: &[u8]) -> u64 {
         let mut result: u64 = 0;
         for &byte in bytes.iter() {
