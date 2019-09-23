@@ -56,20 +56,26 @@ Take note that the expected value of the $i^\text{th}$ summand is less than or e
 $$
 \begin{align}
 \sigma^\text{(Correct)}_i &= E[(A \xor A)^i] = p[(A \xor A)^i = 1] \cdot 1 \\
-                          &= 2 \cdot p[A^i = 1] \cdot (1 - p[A^i = 1]) \in [0; 0.5]
+                          &= 2 \cdot p[A^i = 1] \cdot (1 - p[A^i = 1]) \leq 0.5
 \end{align}
 $$
 
-This relation holds for arbitrary bytesets $U$, not just our source alphabet $A$. Drawing two bits from one distribution with either bit being the other's opposite is unlikely ($p \leq 50\%$) irrespective of how high or low the probability to draw a set bit from the distribution is.
+This relation holds for arbitrary bytesets $U$, not just our source alphabet $A$. Drawing two bits from one distribution with either bit being the other's opposite is unlikely ($p \leq 50\%$) irrespective of how high or low the probability to draw a single set bit from the distribution is.
 
 If **we did not guess the correct key size** the two keys in each of $\sigma$'s constituents $\hdist{\epsilon_j}{ \epsilon_k}$ differ and don't cancel themselves out anymore.
 
 $$
 \begin{align}
-\sigma^\text{(False)}_i &= E[((A \xor K) \xor (A \xor K))^i] \\
-         &= E[((A \xor A) \xor (K \xor K))^i] \\
-         &= p[(A \xor A)^i = 1] \cdot \bigg(1 - p[(K \xor K)^i = 1]\bigg) + \bigg(1 - p[(A \xor A)^i = 1])\bigg) \cdot p[(K \xor K)^i = 1] \\
-         &= \sigma^\text{(Correct)}_i \cdot \underbrace{\bigg(1 - 2 \cdot p[(K \xor K)^i = 1]\bigg)}_{\geq 1} + p[(K \xor K)^i = 1] \\
+\sigma^\text{(False)}_i &= E[((A \xor K) \xor (A \xor K))^i] = E[((A \xor A) \xor (K \xor K))^i]  = p[((A \xor A) \xor (K \xor K))^i = 1] \cdot 1 \\
+\end{align}
+$$
+
+Knowing that $p[(U \xor U)^i = 1] \leq 0.5$ for any byteset $U$ yields the inequality
+
+$$
+\begin{align}
+\sigma_\text{(False)}  &= p[(A \xor A)^i = 1] \cdot \bigg(1 - p[(K \xor K)^i = 1]\bigg) + \bigg(1 - p[(A \xor A)^i = 1])\bigg) \cdot p[(K \xor K)^i = 1] \\
+         &= \sigma^\text{(Correct)}_i + p[(K \xor K)^i = 1] \cdot \underbrace{\bigg(1 - 2 \cdot p[(A \xor A)^i = 1]\bigg)}_{\geq 0} \\
          &\geq \sigma^\text{(Correct)}_i
 \end{align}
 $$
@@ -80,4 +86,4 @@ $$
 \sigma^\text{(False)} \geq \sigma^\text{(Correct)}
 $$
 
-The size of the discrepancy between the two values depends on how much the sets differ. The equality is strict whenever $A \neq K$.
+The size of the discrepancy between the two values depends on how much the sets differ. The inequality is strict if and only if $A \neq K$.
